@@ -1,7 +1,7 @@
 // Package runner performs sequential running of tasks
-// with log output for each step
+// with log output for each step.
 // It is designed to run together with command line tools
-// with configurable starting step
+// with an easily configurable starting point.
 package runner
 
 import (
