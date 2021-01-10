@@ -28,6 +28,20 @@ type Step struct {
 	Name      string       // The name of this step
 	Run       func() error // The run function. A returned error will stop any subsequent runs
 	Dependent bool         // A dependent step cannot be started from
+	SkipFunc               // Optional function to tell whether this step should be skipped
+}
+
+// SkipFunc is a function type to determine whether the step should be skipped
+type SkipFunc func() bool
+
+// SkipAlways is a SkipFunc that will have this step skipped always
+var SkipAlways = SkipFunc(func() bool { return true })
+
+func (skf SkipFunc) shouldSkip() bool {
+	if skf == nil || !skf() {
+		return false
+	}
+	return true
 }
 
 // Steps is an array of Step
@@ -63,7 +77,7 @@ func (ss Steps) Run(startIndex int) error {
 		return errors.Errorf("step %v: %q cannot be started independently, it relies on previous steps", startIndex, startStep.Name)
 	}
 	for i, step := range ss {
-		if i >= startIndex {
+		if i >= startIndex && !step.shouldSkip() {
 			log.Printf(DoFormat, i, len(ss)-1, step.Name)
 			err := step.Run()
 			if err != nil {

@@ -169,6 +169,24 @@ func TestSteps_Run(t *testing.T) {
 		assert.Equal(t, 1, f2.called)
 		assert.Equal(t, 1, f3.called)
 	})
+
+	t.Run("skipping certain steps", func(t *testing.T) {
+		f1, f2, f3, f4 := new(mock), new(mock), new(mock), new(mock)
+		ss := Steps([]Step{
+			{Run: f1.success},
+			{Run: f2.success, SkipFunc: SkipAlways},
+			{Run: f3.success, SkipFunc: func() bool { return false }},
+			{Run: f4.success, SkipFunc: func() bool { return true }},
+		})
+
+		err := ss.RunAll()
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, f1.called)
+		assert.Equal(t, 0, f2.called)
+		assert.Equal(t, 1, f3.called)
+		assert.Equal(t, 0, f4.called)
+	})
 }
 
 func TestSteps_RunAll(t *testing.T) {
