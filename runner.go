@@ -6,17 +6,11 @@ package runner
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-)
-
-// Default format strings for steps output
-var (
-	DoFormat   = "DO\t[%v/0-%v]\t%q"
-	SkipFormat = "SKIP\t[%v/0-%v]\t%q"
+	"github.com/rs/zerolog/log"
 )
 
 func getName(s Step, index int) string {
@@ -73,12 +67,15 @@ func (ss Steps) GetStep(command string) (int, error) {
 
 // Run from a specified zero based starting index
 func (ss Steps) Run(startIndex int) error {
+	localLogger := log.Logger.With().Int("lastStep", len(ss)-1).Logger()
+
 	if startStep := ss[startIndex]; startStep.Dependent {
 		return errors.Errorf("step %v: %q cannot be started independently, it relies on previous steps", startIndex, startStep.Name)
 	}
 	for i, step := range ss {
 		if i >= startIndex && !step.shouldSkip() {
-			log.Printf(DoFormat, i, len(ss)-1, step.Name)
+			localLogger.Info().Int("step", i).Str("name", step.Name).Msg("do step")
+
 			err := step.Run()
 			if err != nil {
 				return errors.Wrapf(err, "could not perform step %v, %v", i, step.Name)
@@ -86,7 +83,7 @@ func (ss Steps) Run(startIndex int) error {
 			continue
 		}
 
-		log.Printf(SkipFormat, i, len(ss)-1, step.Name)
+		localLogger.Info().Int("step", i).Str("name", step.Name).Msg("skip step")
 	}
 	return nil
 }
